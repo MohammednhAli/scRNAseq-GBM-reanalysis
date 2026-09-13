@@ -65,8 +65,8 @@ counts_data <- fread("data/GSE229779_countsMatrix.tsv.gz")
 # Check the size of the imported table
 dim(counts_data)
 
-# Look at the first few rows
-head(counts_data)
+# View the first 5 rows and first 5 columns
+counts_data[1:5, 1:5]
 
 
 # ============================================================
@@ -83,18 +83,21 @@ head(counts_data)
 
 setnames(counts_data, 1, "gene")
 
+# Check the first 5 column names
+names(counts_data)[1:5]
+
 
 # Save the gene names separately before removing the text column.
 #
 # Example:
 # gene_names =
-# TP53
-# EGFR
-# SOX2
+# MIR1302-2HG
+# AL627309.1
+# AL669831.5
 
 gene_names <- counts_data$gene
 
-# Check the first gene names
+# Check the first few gene names
 head(gene_names)
 
 
@@ -105,6 +108,9 @@ head(gene_names)
 
 counts_data[, gene := NULL]
 
+# Check the first 5 remaining columns
+head(counts_data[, 1:5])
+
 
 # Convert the data.table into a standard R matrix.
 #
@@ -114,28 +120,38 @@ counts_matrix <- as.matrix(counts_data)
 
 
 # Add the gene names back as row names.
-#
-# The matrix will now look like:
-#
-#        Cell1   Cell2   Cell3
-# TP53      0       2       0
-# EGFR      5       1       8
-# SOX2      2       0       3
-
 rownames(counts_matrix) <- gene_names
+
+# The matrix now has:
+#   rows    = genes
+#   columns = cells
+#   values  = raw expression counts
+#
+# Example structure:
+#
+#             GBM21_AAACCT...   GBM21_AAACCT...   GBM21_AAACCT...
+# MIR1302-2HG        0                 0                 0
+# AL627309.1         0                 0                 0
+# AL669831.5         0                 0                 0
+# FAM87B             0                 0                 0
+# LINC00115          1                 0                 0
+
+# View the first 5 genes and first 5 cells
+counts_matrix[1:5, 1:5]
+
 
 
 # ============================================================
 # 5. CHECK THE COUNT MATRIX
 # ============================================================
 
-# Number of genes x number of cells
+# Check number of genes x number of cells
 dim(counts_matrix)
 
-# Check first gene names
+# Check the first 5 gene names
 rownames(counts_matrix)[1:5]
 
-# Check first cell names
+# Check the first 5 cell names
 colnames(counts_matrix)[1:5]
 
 # Confirm that the object is a matrix
@@ -146,26 +162,23 @@ class(counts_matrix)
 # 6. REMOVE TEMPORARY OBJECT
 # ============================================================
 
-# counts_data is no longer needed because we now have
-# counts_matrix.
-
+# Remove counts_data because counts_matrix is now the object
+# used for downstream analysis
 rm(counts_data)
 
-# Ask R to free unused memory
+# Free unused memory
 gc()
-
 
 # ============================================================
 # 7. CREATE RAW SEURAT OBJECT
 # ============================================================
 
-# CreateSeuratObject() converts the raw count matrix into a
-# Seurat object for downstream single-cell analysis.
+# Create a Seurat object from the raw gene x cell count matrix.
 #
-# min.cells = 0 and min.features = 0 are used because this script
-# should NOT perform QC or filtering.
+# min.cells = 0 and min.features = 0 prevent filtering during
+# object creation, so all genes and cells are retained.
 #
-# Cell and gene filtering will be handled in the QC script.
+# QC and filtering will be performed in the next analysis script.
 
 gbm <- CreateSeuratObject(
   counts = counts_matrix,
@@ -174,13 +187,13 @@ gbm <- CreateSeuratObject(
   min.features = 0
 )
 
-
 # ============================================================
 # 8. CHECK THE SEURAT OBJECT
 # ============================================================
 
-# Print summary of the Seurat object
+# Print a summary of the Seurat object
 gbm
 
-# Check number of genes x cells
+# Check number of genes x number of cells
 dim(gbm)
+
