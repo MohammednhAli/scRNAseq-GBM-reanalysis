@@ -46,6 +46,15 @@ library(Seurat)
 # 3. READ THE COUNT MATRIX
 # ============================================================
 
+# Before running this script, obtain the raw count matrix for
+# GEO accession GSE229779 and place it in the local data/ folder:
+#
+# data/GSE229779_countsMatrix.tsv.gz
+#
+# The data/ folder is excluded from this GitHub repository via
+# .gitignore, so the raw dataset must be downloaded separately
+# by each user.
+#
 # fread() reads the compressed tab-separated count matrix.
 #
 # Expected structure:
@@ -55,9 +64,9 @@ library(Seurat)
 # EGFR        5       1       8
 # SOX2        2       0       3
 #
-# Rows = genes
+# Rows    = genes
 # Columns = cells
-# Values = raw expression counts
+# Values  = raw expression counts
 
 counts_data <- fread("data/GSE229779_countsMatrix.tsv.gz")
 
@@ -196,6 +205,10 @@ gbm
 
 # Check number of genes x number of cells
 dim(gbm)
+
+# ============================================================
+# 9. CLEAN UP MEMORY
+# ============================================================
 
 # Remove temporary objects that are no longer needed
 rm(counts_matrix, gene_names)
