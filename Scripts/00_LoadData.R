@@ -197,3 +197,8 @@ gbm
 # Check number of genes x number of cells
 dim(gbm)
 
+# Remove temporary objects that are no longer needed
+rm(counts_matrix, gene_names)
+
+# Free unused memory
+gc()
