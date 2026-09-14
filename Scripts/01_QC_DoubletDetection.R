@@ -29,10 +29,15 @@
 # 2. LOAD RAW SEURAT OBJECT
 # ============================================================
 
-# Run the previous script to load the raw count matrix
-# and create the Seurat object.
+# Load the raw Seurat object created by 00_LoadData.R.
+#
+# readRDS() loads the saved Seurat object directly, avoiding
+# the need to re-read the large count matrix and recreate the
+# Seurat object every time the QC script is run.
 
-source("scripts/00_LoadData.R")
+gbm <- readRDS(
+  "data/gbm_raw_seurat.rds"
+)
 
 
 # ============================================================
@@ -137,8 +142,15 @@ range(gbm$percent.mt)
 # nFeature_RNA = 212 - 4499
 # percent.mt   = 0 - 12.49851
 #
-# This shows that the GEO count matrix already falls within
-# the QC range used for this analysis.
+# The QC violin plots show clear upper and lower boundaries,
+# with no cells extending beyond these ranges.
+#
+# Together with the observed minimum and maximum values, this
+# is consistent with the GEO count matrix having already
+# undergone QC filtering before deposition.
+#
+# Therefore, the filtering step below mainly confirms the
+# existing QC boundaries rather than removing additional cells.
 
 
 # ============================================================
@@ -385,8 +397,26 @@ gbm
 dim(gbm)
 
 
-# Expected:
-#
-# 33,469 genes
-# 39,054 retained singlet cells
+# ============================================================
+# 16. SAVE FINAL QC-PASSED OBJECT
+# ============================================================
 
+# Save the final QC-passed Seurat object as an RDS file.
+#
+# saveRDS() stores the complete R object on disk, including:
+#
+#   - raw RNA counts
+#   - QC metadata
+#   - doublet scores
+#   - retained singlet cells
+#
+# This allows downstream scripts to load the completed QC object
+# directly without repeating data loading, QC calculations or
+# scDblFinder doublet detection.
+#
+# The saved object will be used as the input for normalization.
+
+saveRDS(
+  gbm,
+  file = "data/gbm_QC_singlets.rds"
+)

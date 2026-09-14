@@ -215,3 +215,20 @@ rm(counts_matrix, gene_names)
 
 # Free unused memory
 gc()
+
+# ============================================================
+# 10. SAVE RAW SEURAT OBJECT
+# ============================================================
+
+# Save the unfiltered Seurat object as an RDS file.
+#
+# This avoids re-reading the large count matrix and rebuilding
+# the Seurat object every time the next analysis script is run.
+#
+# The saved object contains the raw counts and will be used as
+# the input for QC and doublet detection.
+
+saveRDS(
+  gbm,
+  file = "data/gbm_raw_seurat.rds"
+)
