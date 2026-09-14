@@ -1,0 +1,302 @@
+# ============================================================
+# 1. LOAD PACKAGES
+# ============================================================
+
+library(data.table)
+library(Matrix)
+library(Seurat)
+library(dplyr)
+library(scDblFinder)
+library(SingleCellExperiment)
+
+
+# ============================================================
+# 2. LOAD RAW COUNTS
+# ============================================================
+
+counts_dt <- fread(
+  "DATA/GSE229779_countsMatrix.tsv.gz",
+  sep = "\t",
+  header = TRUE,
+  showProgress = TRUE
+)
+
+dim(counts_dt)
+
+
+# ============================================================
+# 3. EXTRACT GENE + CELL NAMES
+# ============================================================
+
+# Extract gene names from the first column
+gene_names <- counts_dt[[1]]
+
+# Read the original cell barcode names from the file header
+con <- gzfile(
+  "DATA/GSE229779_countsMatrix.tsv.gz",
+  "rt"
+)
+
+header <- readLines(con, n = 1)
+
+close(con)
+
+# Extract all cell barcode names
+cell_names <- strsplit(
+  header,
+  "\t",
+  fixed = TRUE
+)[[1]]
+
+# Count genes and cells
+n_genes <- length(gene_names)
+n_cells <- length(cell_names)
+
+n_genes
+n_cells
+
+# Verify that gene and cell names are unique
+anyDuplicated(gene_names)
+anyDuplicated(cell_names)
+
+
+# ============================================================
+# 4. CONVERT TO SPARSE MATRIX IN CHUNKS
+# ============================================================
+
+chunk_size <- 500
+
+n_chunks <- ceiling(n_cells / chunk_size)
+
+sparse_chunks <- vector("list", n_chunks)
+
+for (k in seq_len(n_chunks)) {
+  
+  start_col <- 2 + (k - 1) * chunk_size
+  end_col <- min(1 + k * chunk_size, ncol(counts_dt))
+  
+  message(
+    "Processing chunk ", k, " / ", n_chunks,
+    " (cells ", start_col - 1, ":", end_col - 1, ")"
+  )
+  
+  block <- counts_dt[
+    ,
+    start_col:end_col,
+    with = FALSE
+  ]
+  
+  sparse_chunks[[k]] <- Matrix(
+    as.matrix(block),
+    sparse = TRUE
+  )
+  
+  rm(block)
+  gc()
+}
+
+
+# ============================================================
+# 5. COMBINE SPARSE CHUNKS
+# ============================================================
+
+count_matrix <- do.call(
+  cbind,
+  sparse_chunks
+)
+
+# Assign gene and cell names
+rownames(count_matrix) <- gene_names
+colnames(count_matrix) <- cell_names
+
+# Check matrix dimensions
+dim(count_matrix)
+
+
+# ============================================================
+# 6. REMOVE LARGE TEMPORARY OBJECTS
+# ============================================================
+
+rm(
+  sparse_chunks,
+  counts_dt
+)
+
+gc()
+
+
+# ============================================================
+# 7. CREATE SEURAT OBJECT
+# ============================================================
+
+gbm <- CreateSeuratObject(
+  counts = count_matrix,
+  project = "GSE229779",
+  min.cells = 0,
+  min.features = 0
+)
+
+
+# ============================================================
+# 8. CALCULATE MITOCHONDRIAL PERCENTAGE
+# ============================================================
+
+gbm[["percent.mt"]] <- PercentageFeatureSet(
+  gbm,
+  pattern = "^MT-"
+)
+
+
+# ============================================================
+# 9. CHECK BASIC QC METRICS
+# ============================================================
+
+# Summary of detected genes per cell
+summary(gbm$nFeature_RNA)
+
+# Summary of total RNA counts per cell
+summary(gbm$nCount_RNA)
+
+# Summary of mitochondrial percentage
+summary(gbm$percent.mt)
+
+
+# ============================================================
+# 10. CALCULATE QC QUANTILES
+# ============================================================
+
+# Quantiles for number of detected genes
+quantile(
+  gbm$nFeature_RNA,
+  probs = c(0, .01, .05, .25, .5, .75, .95, .99, 1)
+)
+
+# Quantiles for total RNA counts
+quantile(
+  gbm$nCount_RNA,
+  probs = c(0, .01, .05, .25, .5, .75, .95, .99, 1)
+)
+
+# Quantiles for mitochondrial percentage
+quantile(
+  gbm$percent.mt,
+  probs = c(0, .01, .05, .25, .5, .75, .95, .99, 1)
+)
+
+
+# ============================================================
+# 11. QC VISUALIZATION
+# ============================================================
+
+# Visualize the distribution of QC metrics
+VlnPlot(
+  gbm,
+  features = c(
+    "nFeature_RNA",
+    "nCount_RNA",
+    "percent.mt"
+  ),
+  ncol = 3,
+  pt.size = 0
+)
+
+# Relationship between total RNA counts and detected genes
+FeatureScatter(
+  gbm,
+  feature1 = "nCount_RNA",
+  feature2 = "nFeature_RNA"
+)
+
+# Relationship between total RNA counts and mitochondrial percentage
+FeatureScatter(
+  gbm,
+  feature1 = "nCount_RNA",
+  feature2 = "percent.mt"
+)
+
+
+# ============================================================
+# 12. BASIC QC FILTERING
+# ============================================================
+
+# Remove cells with very low gene detection,
+# extremely high RNA counts, or high mitochondrial percentage
+gbm_qc <- subset(
+  gbm,
+  subset =
+    nFeature_RNA > 200 &
+    nCount_RNA < 25000 &
+    percent.mt < 12
+)
+
+
+# ============================================================
+# 13. VERIFY QC FILTERING
+# ============================================================
+
+# Check the number of cells before and after QC
+cat("Cells before QC:", ncol(gbm), "\n")
+cat("Cells after QC:", ncol(gbm_qc), "\n")
+
+# Verify that no cells violate the selected QC thresholds
+sum(gbm_qc$nFeature_RNA <= 200)
+sum(gbm_qc$nCount_RNA >= 25000)
+sum(gbm_qc$percent.mt >= 12)
+
+
+# ============================================================
+# 14. CHECK SAMPLE DISTRIBUTION AFTER QC
+# ============================================================
+
+# Check the number of cells retained from each sample
+table(gbm_qc$orig.ident)
+
+
+# ============================================================
+# 15. CONVERT TO SingleCellExperiment
+# ============================================================
+
+# Convert the QC-filtered Seurat object to SingleCellExperiment
+sce <- as.SingleCellExperiment(gbm_qc)
+
+
+# ============================================================
+# 16. VERIFY SingleCellExperiment
+# ============================================================
+
+# Check dimensions of the SingleCellExperiment object
+dim(sce)
+
+# Check dimensions of cell metadata
+dim(colData(sce))
+
+# Check dimensions of the raw count assay
+dim(assay(sce, "counts"))
+
+# Check number of cell names
+length(colnames(sce))
+
+
+# ============================================================
+# 17. DOUBLEt DETECTION
+# ============================================================
+
+# Detect potential doublets separately within each sample
+sce <- scDblFinder(
+  sce,
+  samples = sce$orig.ident
+)
+
+
+# ============================================================
+# 18. CHECK DOUBLETS
+# ============================================================
+
+# Count singlets and doublets
+table(sce$scDblFinder.class)
+
+# Check doublet distribution across samples
+table(
+  sce$scDblFinder.class,
+  sce$orig.ident
+)
