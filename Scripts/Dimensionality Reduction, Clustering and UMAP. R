@@ -138,5 +138,5 @@ DimPlot plots the clusters into two dimension, reduction method = umap.
 
 ### Result:
 
-UMAP capture the nonlinear relation between cells
-cell groups visulaized in 2D.
+UMAP captures the nonlinear relation between cells
+cell type groups visulaized in 2D.
