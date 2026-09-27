@@ -102,7 +102,7 @@ ElbowPlot(gbm)
 
 DimHeatmap(
   gbm,
-  dims = 1:20,
+  dims = 1:,13
   cells = 500,
   balanced = TRUE
 )
@@ -111,8 +111,8 @@ DimHeatmap(
 # DimHeatmap visualizes genes with strong positive and negative loadings
 # for each selected PC.
 #
-# dims = 1:20:
-#   visualize PCs 1 through 20.
+# dims = 1:13:
+#   visualize PCs 1 through 13.
 #
 # cells = 500:
 #   display 500 cells for easier visualization.
@@ -121,7 +121,7 @@ DimHeatmap(
 #   display a balanced number of genes with positive and negative loadings.
 #
 # Result:
-# PCs 1-20 showed structured gene-expression patterns across cells, supporting
+# PCs 1-13 showed structured gene-expression patterns across cells, supporting
 # their use for downstream integration, neighborhood construction, clustering,
 # and UMAP.
 
@@ -140,7 +140,7 @@ DimHeatmap(
 gbm <- RunUMAP(
   gbm,
   reduction = "pca",
-  dims = 1:20,
+  dims = 1:13,
   reduction.name = "umap_before",
   reduction.key = "UMAPbefore_"
 )
@@ -216,12 +216,12 @@ gbm <- RunHarmony(
 #
 # Cells that are transcriptionally similar are connected in this graph.
 #
-# The same selected dimensions, 1-20, are used.
+# The same selected dimensions, 1-13, are used.
 
 gbm <- FindNeighbors(
   gbm,
   reduction = "harmony",
-  dims = 1:20
+  dims = 1:13
 )
 
 # Result:
@@ -270,7 +270,7 @@ gbm <- FindClusters(
 gbm <- RunUMAP(
   gbm,
   reduction = "harmony",
-  dims = 1:20,
+  dims = 1:13,
   reduction.name = "umap_after",
   reduction.key = "UMAPafter_"
 )
