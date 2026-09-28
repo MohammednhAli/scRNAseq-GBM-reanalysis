@@ -157,7 +157,7 @@ write.csv(
 canonical_markers <- c(
   
   # Myeloid / microglia / macrophages
-  "LST1", "TYROBP", "AIF1", "PTPRC","C1QA",
+  "LST1", "TYROBP", "AIF1", "PTPRC", "C1QA",
   
   # T cells
   "CD3D", "CD3E", "TRBC1",
@@ -183,7 +183,6 @@ canonical_markers <- c(
   # Cycling
   "MKI67", "TOP2A"
 )
-
 
 #-------------------------------------------------------------------------------
 # Canonical marker DotPlot
@@ -232,6 +231,11 @@ ggsave(
 # retained as "Candidate neoplastic".
 
 
+#===============================================================================
+# 4. Broad cell-type annotation
+#===============================================================================
+
+
 #-------------------------------------------------------------------------------
 # Start with all clusters as candidate neoplastic
 #-------------------------------------------------------------------------------
@@ -243,13 +247,13 @@ gbm$broad_celltype <- "Candidate neoplastic"
 # Myeloid
 #-------------------------------------------------------------------------------
 #
-# Cluster 2:
-#   TMEM119, FOLR2, C1QA, C1QC and CX3CR1,
-#   together with canonical myeloid markers LST1, TYROBP,
-#   AIF1 and PTPRC, support a microglial/myeloid identity.
+# Cluster 1:
+#   TMEM119, FOLR2, C1QA, C1QB, C1QC and CX3CR1,
+#   together with canonical LST1, TYROBP, AIF1 and PTPRC,
+#   strongly support a microglial/myeloid identity.
 #
-# Cluster 11:
-#   LYZ, S100A8, S100A9 and C15orf48,
+# Cluster 12:
+#   LYZ, S100A8, S100A9, C15orf48 and ADAM8,
 #   together with canonical myeloid markers,
 #   support an inflammatory myeloid / monocyte-macrophage identity.
 #
@@ -258,10 +262,10 @@ gbm$broad_celltype <- "Candidate neoplastic"
 #   Strong MKI67, TOP2A, RRM2, TK1 and CEP55 expression indicates
 #   that this population is proliferating/cycling.
 #
-# Therefore cluster 14 is retained within the broad Myeloid category.
+# Therefore, cluster 14 is retained within the broad Myeloid category.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters %in% c("2", "11", "14")
+  gbm$seurat_clusters %in% c("1", "12", "14")
 ] <- "Myeloid"
 
 
@@ -269,13 +273,13 @@ gbm$broad_celltype[
 # Oligodendrocytes
 #-------------------------------------------------------------------------------
 #
-# Cluster 9:
-#   MAG, MOG, OPALIN, NKX6-2 and other oligodendrocyte-associated genes,
+# Cluster 10:
+#   MAG, MOG, OPALIN, NKX6-2, CNDP1 and TMEM125,
 #   together with canonical MAG, MOG, MOBP and CLDN11 expression,
 #   strongly support mature oligodendrocyte identity.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters == "9"
+  gbm$seurat_clusters == "10"
 ] <- "Oligodendrocytes"
 
 
@@ -284,7 +288,7 @@ gbm$broad_celltype[
 #-------------------------------------------------------------------------------
 #
 # Cluster 13:
-#   CD3D, CD3E, CD3G, CD8B and GZMA
+#   CD3D, CD3E, CD3G, CD8B, TRBC1 and GZMA
 #   strongly support T-cell identity.
 
 gbm$broad_celltype[
@@ -293,18 +297,18 @@ gbm$broad_celltype[
 
 
 #-------------------------------------------------------------------------------
-# Fibroblast
+# Fibroblast / stromal
 #-------------------------------------------------------------------------------
 #
-# Cluster 15:
-#   COL1A1, COL3A1, DCN, LUM, COL6A3 and CD248
+# Cluster 16:
+#   COL1A1, COL3A1, LUM, DCN and COL6A3
 #   strongly support a fibroblast/stromal identity.
 #
-# Some perivascular features are also present, but "Fibroblast"
-# is retained as the broad label to match the original paper.
+# RGS5 and other perivascular features are also present,
+# but "Fibroblast" is retained as the broad label.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters == "15"
+  gbm$seurat_clusters == "16"
 ] <- "Fibroblast"
 
 
@@ -312,12 +316,13 @@ gbm$broad_celltype[
 # Endothelial
 #-------------------------------------------------------------------------------
 #
-# Cluster 16:
-#   VWF, SOX17, ECSCR and other canonical vascular markers
+# Cluster 17:
+#   VWF, SOX17, ECSCR, PCAT19 and MYCT1,
+#   together with canonical PECAM1, VWF and CLDN5 expression,
 #   strongly support endothelial identity.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters == "16"
+  gbm$seurat_clusters == "17"
 ] <- "Endothelial"
 
 
@@ -349,7 +354,6 @@ p_annotation <- DimPlot(
   ggtitle("Broad Cell-Type Annotation")
 
 p_annotation
-
 
 #-------------------------------------------------------------------------------
 # Save annotated UMAP
