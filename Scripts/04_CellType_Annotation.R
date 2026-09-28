@@ -22,6 +22,11 @@
 library(Seurat)
 library(dplyr)
 library(ggplot2)
+library(presto)
+
+# 'presto' provides a faster implementation of the Wilcoxon Rank Sum Test
+# used by Seurat for FindMarkers() and FindAllMarkers().
+# Once installed and loaded, Seurat can use it automatically.
 
 gbm <- readRDS("data/gbm_harmony_clustered.rds")
 
@@ -152,7 +157,7 @@ write.csv(
 canonical_markers <- c(
   
   # Myeloid / microglia / macrophages
-  "LST1", "TYROBP", "AIF1", "PTPRC",
+  "LST1", "TYROBP", "AIF1", "PTPRC","C1QA",
   
   # T cells
   "CD3D", "CD3E", "TRBC1",
@@ -239,20 +244,24 @@ gbm$broad_celltype <- "Candidate neoplastic"
 #-------------------------------------------------------------------------------
 #
 # Cluster 2:
-#   macrophage/myeloid marker profile.
+#   TMEM119, FOLR2, C1QA, C1QC and CX3CR1,
+#   together with canonical myeloid markers LST1, TYROBP,
+#   AIF1 and PTPRC, support a microglial/myeloid identity.
 #
-# Cluster 9:
-#   P2RY12 and TMEM119 plus strong canonical myeloid markers,
-#   supporting microglial identity.
+# Cluster 11:
+#   LYZ, S100A8, S100A9 and C15orf48,
+#   together with canonical myeloid markers,
+#   support an inflammatory myeloid / monocyte-macrophage identity.
 #
 # Cluster 14:
-#   strong cycling genes such as MKI67, RRM2, TK1 and CEP55,
-#   together with LST1, TYROBP, AIF1 and PTPRC.
+#   LST1, TYROBP, AIF1, PTPRC and C1QA support myeloid lineage.
+#   Strong MKI67, TOP2A, RRM2, TK1 and CEP55 expression indicates
+#   that this population is proliferating/cycling.
 #
-# Therefore cluster 14 represents cycling myeloid cells.
+# Therefore cluster 14 is retained within the broad Myeloid category.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters %in% c("2", "9", "14")
+  gbm$seurat_clusters %in% c("2", "11", "14")
 ] <- "Myeloid"
 
 
@@ -260,12 +269,13 @@ gbm$broad_celltype[
 # Oligodendrocytes
 #-------------------------------------------------------------------------------
 #
-# Cluster 10:
-# MAG, MOG, MOBP, CLDN11 and ERMN
-# strongly support mature oligodendrocyte identity.
+# Cluster 9:
+#   MAG, MOG, OPALIN, NKX6-2 and other oligodendrocyte-associated genes,
+#   together with canonical MAG, MOG, MOBP and CLDN11 expression,
+#   strongly support mature oligodendrocyte identity.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters %in% c("10")
+  gbm$seurat_clusters == "9"
 ] <- "Oligodendrocytes"
 
 
@@ -274,11 +284,11 @@ gbm$broad_celltype[
 #-------------------------------------------------------------------------------
 #
 # Cluster 13:
-# CD3D, CD3E, CD3G, CD8B and GZMA
-# support T-cell identity.
+#   CD3D, CD3E, CD3G, CD8B and GZMA
+#   strongly support T-cell identity.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters %in% c("13")
+  gbm$seurat_clusters == "13"
 ] <- "T cells"
 
 
@@ -287,14 +297,14 @@ gbm$broad_celltype[
 #-------------------------------------------------------------------------------
 #
 # Cluster 15:
-# COL1A1, COL3A1, DCN, LUM and CD248
-# support a fibroblast/stromal identity.
+#   COL1A1, COL3A1, DCN, LUM, COL6A3 and CD248
+#   strongly support a fibroblast/stromal identity.
 #
-# Some perivascular features are also present, but "Fibroblast" is retained
-# as the broad label for comparison with the original paper.
+# Some perivascular features are also present, but "Fibroblast"
+# is retained as the broad label to match the original paper.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters %in% c("15")
+  gbm$seurat_clusters == "15"
 ] <- "Fibroblast"
 
 
@@ -303,11 +313,11 @@ gbm$broad_celltype[
 #-------------------------------------------------------------------------------
 #
 # Cluster 16:
-# VWF, SOX17, ECSCR and canonical vascular markers
-# support endothelial identity.
+#   VWF, SOX17, ECSCR and other canonical vascular markers
+#   strongly support endothelial identity.
 
 gbm$broad_celltype[
-  gbm$seurat_clusters %in% c("16")
+  gbm$seurat_clusters == "16"
 ] <- "Endothelial"
 
 
@@ -377,13 +387,24 @@ saveRDS(
 #   Fibroblast
 #   Endothelial
 #
+# Final broad cluster mapping:
+#
+#   Clusters 2, 11, 14  -> Myeloid
+#   Cluster 9           -> Oligodendrocytes
+#   Cluster 13          -> T cells
+#   Cluster 15          -> Fibroblast
+#   Cluster 16          -> Endothelial
+#
+# Remaining clusters are retained as "Candidate neoplastic"
+# until further neoplastic-cell validation and state analysis.
+#
 # Key saved outputs:
 #
-# data/gbm_all_cluster_markers.csv
-# data/gbm_top10_markers_per_cluster.csv
-# data/gbm_canonical_marker_dotplot.png
-# data/gbm_broad_celltype_annotation.png
-# data/gbm_broad_celltype_annotated.rds
+#   data/gbm_all_cluster_markers.csv
+#   data/gbm_top10_markers_per_cluster.csv
+#   data/gbm_canonical_marker_dotplot.png
+#   data/gbm_broad_celltype_annotation.png
+#   data/gbm_broad_celltype_annotated.rds
 #
 # The annotated object can now be used for downstream analyses such as:
 #
