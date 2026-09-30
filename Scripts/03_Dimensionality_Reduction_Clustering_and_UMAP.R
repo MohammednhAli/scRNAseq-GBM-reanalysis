@@ -55,24 +55,10 @@ gbm <- RunPCA(
 # Visualize PCA
 #-------------------------------------------------------------------------------
 
-p_pca <- DimPlot(
+DimPlot(
   gbm,
   reduction = "pca"
 )
-
-p_pca
-
-
-# Save PCA figure.
-
-ggsave(
-  filename = "figures/PCA_plot.png",
-  plot = p_pca,
-  width = 8,
-  height = 6,
-  units = "in",
-  dpi = 300,
-  )
 
 # Result:
 # The plot shows PC1 versus PC2.
@@ -93,21 +79,7 @@ ggsave(
 # 2A. Elbow plot
 #-------------------------------------------------------------------------------
 
-p_elbow <- ElbowPlot(gbm)
-
-p_elbow
-
-
-# Save elbow plot.
-
-ggsave(
-  filename = "figures/PCA_elbow_plot.png",
-  plot = p_elbow,
-  width = 7,
-  height = 5,
-  units = "in",
-  dpi = 300,
-  )
+ElbowPlot(gbm)
 
 # Purpose:
 # The elbow plot shows the relative contribution of successive PCs.
@@ -127,8 +99,6 @@ ggsave(
 # 2B. Visualize genes contributing to selected PCs
 #-------------------------------------------------------------------------------
 
-# Display the PC heatmap in RStudio.
-
 DimHeatmap(
   gbm,
   dims = 1:12,
@@ -136,26 +106,12 @@ DimHeatmap(
   balanced = TRUE
 )
 
-
-# Save the same heatmap as a high-quality PNG.
-#
-# DimHeatmap uses fast plotting by default and therefore does not return
-# a ggplot object. The PNG graphics device is used to save it directly.
-
-png(
-  filename = "figures/PCA_PC1-12_heatmap.png",
-  width = 14,
-  height = 10,
-  units = "in",
-  res = 300
-)
-
 # Purpose:
 # DimHeatmap visualizes genes with strong positive and negative loadings
 # for each selected PC.
 #
 # dims = 1:12:
-#   visualize PCs 1 through 12.
+#   visualize PCs 1 through 13.
 #
 # cells = 500:
 #   display 500 cells for easier visualization.
@@ -202,17 +158,6 @@ p_before <- DimPlot(
 
 p_before
 
-
-# Save UMAP before Harmony integration.
-
-ggsave(
-  filename = "figures/UMAP_before_Harmony_by_sample.png",
-  plot = p_before,
-  width = 8,
-  height = 6,
-  units = "in",
-  dpi = 300,
-  )
 # Result:
 # Before integration, several cell populations were strongly associated with
 # individual GBM samples.
@@ -342,17 +287,6 @@ p_after <- DimPlot(
   ggtitle("After Harmony integration")
 
 p_after
-
-# Save UMAP after Harmony integration.
-
-ggsave(
-  filename = "figures/UMAP_after_Harmony_by_sample.png",
-  plot = p_after,
-  width = 8,
-  height = 6,
-  units = "in",
-  dpi = 300,
-  )
 
 # Result:
 # Harmony improves mixing between several samples while preserving distinct
