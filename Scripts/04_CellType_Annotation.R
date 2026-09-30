@@ -203,6 +203,19 @@ p_dotplot <- DotPlot(
 
 p_dotplot
 
+#-------------------------------------------------------------------------------
+# Save canonical marker DotPlot
+#-------------------------------------------------------------------------------
+
+ggsave(
+  filename = "figures/gbm_canonical_marker_dotplot.png",
+  plot = p_dotplot,
+  width = 12,
+  height = 8,
+  units = "in",
+  dpi = 300,
+  )
+
 
 #-------------------------------------------------------------------------------
 # Save canonical marker DotPlot
@@ -359,12 +372,13 @@ p_annotation
 #-------------------------------------------------------------------------------
 
 ggsave(
-  filename = "data/gbm_broad_celltype_annotation.png",
+  filename = "figures/gbm_broad_celltype_annotation.png",
   plot = p_annotation,
   width = 9,
   height = 7,
-  dpi = 300
-)
+  units = "in",
+  dpi = 300,
+  )
 
 
 #===============================================================================
