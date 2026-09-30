@@ -128,14 +128,13 @@ write.csv(
 
 
 #-------------------------------------------------------------------------------
-# Save another copy to Windows Downloads
+# The marker table is already saved above as
+# "data/gbm_top10_markers_per_cluster.csv".
+#
+# A previous version also wrote a hardcoded absolute Windows path pointing to
+# one contributor's Downloads folder, which made the script fail on any other
+# machine. That redundant copy has been removed so the script stays portable.
 #-------------------------------------------------------------------------------
-
-write.csv(
-  top10_markers,
-  file = "C:/Users/Moe9621/Downloads/gbm_top10_markers_per_cluster.csv",
-  row.names = FALSE
-)
 
 
 #===============================================================================

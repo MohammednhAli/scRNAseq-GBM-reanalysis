@@ -39,6 +39,33 @@ Tested with:
 - R 4.5.1
 - Seurat 5.5.1 
 
+### 03_Dimensionality Reduction_Clustering_and_UMAP.R
+
+Loads the normalized and scaled Seurat object, runs PCA, and generates a UMAP of the uncorrected data to visualise sample-driven structure (`group.by = "orig.ident"`). Harmony is then used to integrate the samples, the neighborhood graph is rebuilt on the Harmony embedding (`dims = 1:12`), and clusters are identified with `FindClusters(resolution = 0.5)`. A post-Harmony UMAP is produced so the before/after integration can be compared directly.
+
+Saves the integrated, clustered Seurat object as `data/gbm_harmony_clustered.rds`.
+
+Tested with:
+
+- R 4.5.1
+- Seurat 5.5.1
+- harmony 2.0.5
+
+### 04_CellType_Annotation.R
+
+Loads the Harmony-clustered Seurat object and identifies marker genes for every cluster with `FindAllMarkers(only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)`. The top 10 markers per cluster are selected by `avg_log2FC` and exported, then checked against a canonical lineage marker panel (myeloid, T cell, oligodendrocyte, endothelial, fibroblast, pericyte, glial, astrocytic and cycling programs) using `DotPlot()`.
+
+Broad cell types are assigned by combining the cluster-specific DE markers with the canonical marker evidence, and clusters without convincing normal-lineage markers are conservatively retained as `Candidate neoplastic`. Saves the annotated object as `data/gbm_broad_celltype_annotated.rds`.
+
+`presto` is used as an optional accelerator for the Wilcoxon test behind `FindMarkers()`/`FindAllMarkers()`. It is not required: if it is not installed, comment out `library(presto)` and Seurat falls back to its own Wilcoxon implementation.
+
+Tested with:
+
+- R 4.5.1
+- Seurat 5.5.1
+- presto 1.1.0
+- ggplot2 4.0.3
+
 ### 05_Neoplastic_Cell_Analysis.R
 
 Subsets the candidate neoplastic cells from the broad-cell-type annotated object, recalculates variable features and PCA within the neoplastic compartment, selects informative PCs, and runs Harmony integration across patients. The neighborhood graph, neoplastic subclusters (`resolution = 0.5`, `dims = 1:10`), and a post-Harmony UMAP are then generated.
