@@ -87,11 +87,11 @@ ElbowPlot(gbm)
 # Earlier PCs explain more variation, while later PCs contribute progressively
 # less.
 #
-# Based on the elbow plot and inspection of the PC heatmaps, PCs 1-13 were
+# Based on the elbow plot and inspection of the PC heatmaps, PCs 1-12 were
 # retained for downstream analysis.
 #
 # Selected dimensions:
-# dims = 1:13
+# dims = 1:12
 #
 
 
@@ -101,7 +101,7 @@ ElbowPlot(gbm)
 
 DimHeatmap(
   gbm,
-  dims = 1:13,
+  dims = 1:12,
   cells = 500,
   balanced = TRUE
 )
@@ -110,7 +110,7 @@ DimHeatmap(
 # DimHeatmap visualizes genes with strong positive and negative loadings
 # for each selected PC.
 #
-# dims = 1:13:
+# dims = 1:12:
 #   visualize PCs 1 through 13.
 #
 # cells = 500:
@@ -120,7 +120,7 @@ DimHeatmap(
 #   display a balanced number of genes with positive and negative loadings.
 #
 # Result:
-# PCs 1-13 showed structured gene-expression patterns across cells, supporting
+# PCs 1-12 showed structured gene-expression patterns across cells, supporting
 # their use for downstream integration, neighborhood construction, clustering,
 # and UMAP.
 
@@ -139,7 +139,7 @@ DimHeatmap(
 gbm <- RunUMAP(
   gbm,
   reduction = "pca",
-  dims = 1:13,
+  dims = 1:12,
   reduction.name = "umap_before",
   reduction.key = "UMAPbefore_"
 )
@@ -215,12 +215,12 @@ gbm <- RunHarmony(
 #
 # Cells that are transcriptionally similar are connected in this graph.
 #
-# The same selected dimensions, 1-13, are used.
+# The same selected dimensions, 1-12, are used.
 
 gbm <- FindNeighbors(
   gbm,
   reduction = "harmony",
-  dims = 1:13
+  dims = 1:12
 )
 
 # Result:
@@ -269,7 +269,7 @@ gbm <- FindClusters(
 gbm <- RunUMAP(
   gbm,
   reduction = "harmony",
-  dims = 1:13,
+  dims = 1:12,
   reduction.name = "umap_after",
   reduction.key = "UMAPafter_"
 )
