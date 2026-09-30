@@ -107,7 +107,7 @@ gbm <- FindVariableFeatures(
 # VariableFeatures() returns the genes identified as highly
 # variable.
 #
-# Select the top 10 most variable genes for labeling.
+# Select the top 10 most variable genes.
 
 top10 <- head(
   VariableFeatures(gbm),
@@ -115,22 +115,32 @@ top10 <- head(
 )
 
 
-# VariableFeaturePlot() displays gene variability and highlights
-# the genes selected as highly variable.
+# Create the variable-feature plot.
 
 plot1 <- VariableFeaturePlot(gbm)
 
 
-# LabelPoints() adds labels for the 10 most highly variable
-# genes to the plot.
-#
-# repel = TRUE helps prevent overlapping gene labels.
+# Add labels for the top 10 variable genes.
 
-LabelPoints(
+p_hvg <- LabelPoints(
   plot = plot1,
   points = top10,
   repel = TRUE
 )
+
+p_hvg
+
+
+# Save the figure.
+
+ggsave(
+  filename = "figures/HVG_top10_variable_genes.png",
+  plot = p_hvg,
+  width = 9,
+  height = 6,
+  units = "in",
+  dpi = 300,
+  )
 
 
 # ============================================================
