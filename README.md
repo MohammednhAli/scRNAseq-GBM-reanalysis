@@ -237,3 +237,7 @@ The figure summarizes the top enriched GO Biological Processes among genes with 
 ## Data Source
 
 The single-cell RNA-seq data and published metadata used in this reanalysis are available from GEO under accession **GSE229779**.
+
+## Citation
+
+Please cite the original study associated with GEO accession **GSE229779** when reusing the source dataset.
