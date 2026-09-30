@@ -905,32 +905,32 @@ GO_summary <- bind_rows(
   GO_AC_Initial_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "AC", Comparison = "Higher in Initial"),
+    mutate(State = "AC-like", Comparison = "Higher in Initial"),
   
   GO_AC_Recurrence_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "AC", Comparison = "Higher in Recurrence"),
+    mutate(State = "AC-like", Comparison = "Higher in Recurrence"),
   
   GO_MES_Initial_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "MES", Comparison = "Higher in Initial"),
+    mutate(State = "MES-like", Comparison = "Higher in Initial"),
   
   GO_MES_Recurrence_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "MES", Comparison = "Higher in Recurrence"),
+    mutate(State = "MES-like", Comparison = "Higher in Recurrence"),
   
   GO_NPC_Initial_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "NPC", Comparison = "Higher in Initial"),
+    mutate(State = "NPC-like", Comparison = "Higher in Initial"),
   
   GO_NPC_Recurrence_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "NPC", Comparison = "Higher in Recurrence")
+    mutate(State = "NPC-like", Comparison = "Higher in Recurrence")
 )
 
 
@@ -958,12 +958,12 @@ GO_plot_data$log10_padj <- -log10(GO_plot_data$p.adjust)
 GO_plot_data$Comparison <- factor(
   paste(GO_plot_data$State, GO_plot_data$Comparison, sep = " - "),
   levels = c(
-    "AC - Higher in Recurrence",
-    "AC - Higher in Initial",
-    "MES - Higher in Recurrence",
-    "MES - Higher in Initial",
-    "NPC - Higher in Recurrence",
-    "NPC - Higher in Initial"
+    "AC-like - Higher in Recurrence",
+    "AC-like - Higher in Initial",
+    "MES-like - Higher in Recurrence",
+    "MES-like - Higher in Initial",
+    "NPC-like - Higher in Recurrence",
+    "NPC-like - Higher in Initial"
   )
 )
 
@@ -1006,6 +1006,51 @@ ggsave(
   width = 12,
   height = 8
 )
+p_GO_summary <- ggplot(
+  GO_plot_data,
+  aes(
+    x = Comparison,
+    y = reorder(Description, log10_padj),
+    size = Count,
+    color = log10_padj
+  )
+) +
+  geom_point() +
+  theme_bw() +
+  labs(
+    title = "GO Biological Process Enrichment",
+    x = "State and comparison",
+    y = "Biological Process",
+    size = "Gene count",
+    color = "-log10 adjusted p-value"
+  ) +
+  theme(
+    plot.title = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    axis.title = element_text(
+      size = 12
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 10
+    ),
+    axis.text.y = element_text(
+      size = 8
+    ),
+    legend.title = element_text(
+      size = 10
+    ),
+    legend.text = element_text(
+      size = 9
+    )
+  )
+
+p_GO_summary
+
+
 
 ggsave(
   "data/GO_summary_combined.png",
