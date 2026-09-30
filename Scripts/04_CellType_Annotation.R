@@ -423,12 +423,12 @@ saveRDS(
 #   data/gbm_broad_celltype_annotation.png
 #   data/gbm_broad_celltype_annotated.rds
 #
-# The annotated object can now be used for downstream analyses such as:
+# Key saved outputs:
 #
-#   - neoplastic-cell state analysis
-#   - myeloid subclustering
-#   - cell-type composition analysis
-#   - newly diagnosed vs recurrent comparisons
-#   - differential expression within defined cell populations
+#   data/gbm_all_cluster_markers.csv
+#   data/gbm_top10_markers_per_cluster.csv
+#   figures/gbm_canonical_marker_dotplot.png
+#   figures/gbm_broad_celltype_annotation.png
+#   data/gbm_broad_celltype_annotated.rds
 #
 #===============================================================================
