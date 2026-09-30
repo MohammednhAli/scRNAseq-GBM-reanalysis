@@ -398,6 +398,17 @@ p_neoplastic_annotation <- p_clusters + p_states
 p_neoplastic_annotation
 
 
+
+# Save neoplastic subclusters and Neftel-state annotation figure
+
+ggsave(
+  "figures/neoplastic_subclusters_Neftel_states.png",
+  plot = p_neoplastic_annotation,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
+
 # Check available metadata before downstream analysis
 colnames(gbm_neoplastic@meta.data)
 
@@ -1053,11 +1064,11 @@ p_GO_summary
 
 
 ggsave(
-  "data/GO_summary_combined.png",
+  "figures/GO_summary_combined.png",
   plot = p_GO_summary,
   width = 12,
   height = 8,
-  dpi = 300
+  dpi = 600
 )
 
 
@@ -1069,3 +1080,4 @@ saveRDS(
   gbm_neoplastic,
   file = "data/gbm_neoplastic_final.rds"
 )
+
