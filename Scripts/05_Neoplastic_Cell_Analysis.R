@@ -1,24 +1,50 @@
 #===============================================================================
 # GBM scRNA-seq ANALYSIS
 # Dataset: GSE229779
-#
 # Script: 05_Neoplastic_Cell_Analysis.R
 #
 # Purpose:
+#   This script performs focused analysis of the candidate neoplastic
+#   compartment identified during broad cell-type annotation.
+#
+# Workflow:
 #   1. Load the broad-cell-type annotated Seurat object.
 #   2. Subset candidate neoplastic cells.
-#   3. Recalculate variable features and PCA within the neoplastic compartment.
-#   4. Select informative PCs using ElbowPlot and DimHeatmap.
-#   5. Visualize patient-associated structure before Harmony.
-#   6. Perform Harmony integration on the neoplastic subset.
-#   7. Construct the neighborhood graph and neoplastic subclusters.
-#   8. Visualize patients and neoplastic subclusters after Harmony.
-#   9. Continue with marker identification and neoplastic-state annotation.
+#   3. Re-normalize the neoplastic subset and identify variable features.
+#   4. Perform PCA and select informative principal components.
+#   5. Assess patient-associated structure before integration.
+#   6. Perform Harmony integration across patients.
+#   7. Construct the neighborhood graph and identify neoplastic subclusters.
+#   8. Visualize the integrated neoplastic-cell landscape.
+#   9. Identify cluster-specific marker genes.
+#  10. Evaluate published GBM transcriptional-state marker programs.
+#  11. Manually annotate AC, MES, NPC and OPC Neftel states.
+#  12. Prepare the annotated object for downstream comparison of
+#      Initial versus Recurrent tumors.
+#
+# Input files:
+#   - gbm_broad_celltype_annotated.rds
+#       Broad-cell-type annotated Seurat object generated in the previous step.
+#
+#   - GSE229779_cellMetadata.tsv.gz
+#       Published cell metadata containing cell IDs, patient information,
+#       Initial/Recurrence status, original cell-type annotations,
+#       Neftel states and cell-cycle scores.
+#
+# Output files:
+#   - gbm_neoplastic_clustered.rds
+#   - gbm_neoplastic_all_markers.csv
+#   - gbm_neoplastic_top30_markers_per_cluster.csv
+#   - gbm_neoplastic_manual_Neftel_annotated.rds
+#
+# NOTE:
+#   File paths in this script are relative to the project root.
+#   Update the paths according to your local project directory structure.
 #===============================================================================
 
 
 #===============================================================================
-# NEOPLASTIC GBM SUBCLUSTERING PIPELINE
+# 0. Load required packages
 #===============================================================================
 
 library(Seurat)
@@ -26,13 +52,29 @@ library(harmony)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
-library(presto)
 
-gbm <- readRDS("data/gbm_broad_celltype_annotated.rds")
 
-original_meta <- read.delim(
-  "data/GSE229779_cellMetadata.tsv.gz"
+#===============================================================================
+# Load input data
+#===============================================================================
+
+# Broad-cell-type annotated Seurat object
+gbm <- readRDS(
+  "data/gbm_broad_celltype_annotated.rds"
 )
+
+
+# Published cell-level metadata
+original_meta <- read.delim(
+  "data/GSE229779_cellMetadata (1).tsv.gz",
+  check.names = FALSE
+)
+
+
+# Inspect imported metadata
+dim(original_meta)
+colnames(original_meta)
+head(original_meta)
 #===============================================================================
 # 1. Subset candidate neoplastic cells
 #===============================================================================
@@ -196,7 +238,19 @@ saveRDS(
 )
 
 #===============================================================================
-# 14. Find markers for every neoplastic cluster
+# 14. Find markers for every neoplastic subcluster
+#
+# Differentially expressed markers were identified for each neoplastic
+# subcluster using FindAllMarkers().
+#
+# Initially, the top 10 markers per cluster were inspected. However, for
+# several clusters the top 10 genes were dominated by highly specific,
+# stress-related, cell-cycle-related, or poorly characterized genes and were
+# not sufficient to confidently identify the underlying GBM transcriptional
+# state.
+#
+# Therefore, the top 30 markers were retained to provide a broader view of
+# each cluster's transcriptional program and facilitate biological annotation.
 #===============================================================================
 
 Idents(gbm_neoplastic) <- "neoplastic_clusters"
@@ -208,21 +262,26 @@ neoplastic_markers <- FindAllMarkers(
   logfc.threshold = 0.25
 )
 
-#===============================================================================
-# 14. Find markers for every neoplastic cluster
-#===============================================================================
-
-Idents(gbm_neoplastic) <- "neoplastic_clusters"
-
-neoplastic_markers <- FindAllMarkers(
-  gbm_neoplastic,
-  only.pos = TRUE,
-  min.pct = 0.25,
-  logfc.threshold = 0.25
-)
 
 #===============================================================================
-# 16. Save marker tables
+# 15. Select and save the top 30 markers per cluster
+#
+# The top 30 significantly enriched genes were ranked by average log2 fold
+# change and used as an initial guide for cluster annotation.
+#
+# Cluster identities were not assigned from individual top markers alone.
+# Instead, the top-marker profiles were compared with published marker
+# programs defining the major GBM transcriptional states:
+#
+#   AC  - astrocyte-like
+#   MES - mesenchymal-like
+#   NPC - neural-progenitor-like
+#   OPC - oligodendrocyte-progenitor-like
+#
+# Coordinated expression of the published marker programs was subsequently
+# evaluated using DotPlots. MES1/MES2 and NPC1/NPC2 programs were initially
+# examined separately and later collapsed into the four major states for
+# downstream analysis.
 #===============================================================================
 
 write.csv(
@@ -248,44 +307,43 @@ write.csv(
 )
 
 
-
-
-##===============================================================================
+#===============================================================================
 # 17. Manual Neftel-state annotation
 #
-# Neoplastic clusters were annotated using:
-#   1. Top differentially expressed genes for each cluster
+# Neoplastic subclusters were manually annotated by integrating:
+#
+#   1. The top 30 differentially expressed genes for each cluster
 #   2. Published marker programs for AC-, MES-, NPC- and OPC-like GBM states
 #   3. DotPlot visualization of coordinated marker expression
 #
 # MES1/MES2 and NPC1/NPC2 programs were initially evaluated separately,
 # then collapsed into the four major Neftel states for downstream analysis.
 #
-# Manual annotations were subsequently compared with the original authors'
-# cell-level Neftel_State metadata as validation.
-
+# The original authors' cell-level metadata was additionally inspected as a
+# validation reference for selected ambiguous populations.
+#
+# Clusters without a sufficiently clear AC/MES/NPC/OPC transcriptional
+# program were retained as Unassigned.
+#===============================================================================
 
 gbm_neoplastic$manual_Neftel_state <- "Unassigned"
 
+
 # AC
 gbm_neoplastic$manual_Neftel_state[
-  gbm_neoplastic$neoplastic_clusters %in% c("0", "4", "6", "12", "13")
+  gbm_neoplastic$neoplastic_clusters %in% c(
+    "0", "4", "6", "12", "13"
+  )
 ] <- "AC"
+
 
 # MES
 gbm_neoplastic$manual_Neftel_state[
-  gbm_neoplastic$neoplastic_clusters %in% c("1", "9", "11")
+  gbm_neoplastic$neoplastic_clusters %in% c(
+    "1", "9", "11"
+  )
 ] <- "MES"
 
-# NPC
-gbm_neoplastic$manual_Neftel_state[
-  gbm_neoplastic$neoplastic_clusters %in% c("2", "3")
-] <- "NPC"
-
-# OPC
-gbm_neoplastic$manual_Neftel_state[
-  gbm_neoplastic$neoplastic_clusters == "5"
-] <- "OPC"
 
 # NPC
 gbm_neoplastic$manual_Neftel_state[
@@ -293,6 +351,12 @@ gbm_neoplastic$manual_Neftel_state[
     "2", "3"
   )
 ] <- "NPC"
+
+
+# OPC
+gbm_neoplastic$manual_Neftel_state[
+  gbm_neoplastic$neoplastic_clusters == "5"
+] <- "OPC"
 
 
 #===============================================================================
@@ -333,8 +397,9 @@ p_neoplastic_annotation <- p_clusters + p_states
 
 p_neoplastic_annotation
 
-colnames(gbm_neoplastic@meta.data)
 
+# Check available metadata before downstream analysis
+colnames(gbm_neoplastic@meta.data)
 
 
 #===============================================================================
@@ -368,7 +433,21 @@ saveRDS(
   file = "data/gbm_neoplastic_annotated.rds"
 )
 
-# 22. Differential expression: AC state
+##===============================================================================
+# 22. Differential expression within Neftel states
+#
+# Differential expression was performed separately within each manually
+# annotated Neftel state to compare recurrent versus initial tumors.
+#
+# ident.1 = Recurrence
+# ident.2 = Initial
+#
+# Therefore:
+#   avg_log2FC > 0  = higher expression in Recurrence
+#   avg_log2FC < 0  = higher expression in Initial
+#
+# OPC was not analyzed because no recurrent OPC cells were identified in the
+# manual state annotation.
 #===============================================================================
 
 ac <- subset(
@@ -380,6 +459,8 @@ table(ac$TimePoint)
 
 Idents(ac) <- "TimePoint"
 
+levels(Idents(ac))
+
 DE_AC <- FindMarkers(
   ac,
   ident.1 = "Recurrence",
@@ -388,10 +469,12 @@ DE_AC <- FindMarkers(
   logfc.threshold = 0.25
 )
 
+head(DE_AC)
+
 write.csv(
   DE_AC,
   "data/DE_AC_Recurrence_vs_Initial.csv",
-  row.names = FALSE
+  row.names = TRUE
 )
 
 # Differential expression: MES state
@@ -417,7 +500,7 @@ DE_MES <- FindMarkers(
 write.csv(
   DE_MES,
   "data/DE_MES_Recurrence_vs_Initial.csv",
-  row.names = FALSE
+  row.names = TRUE
 )
 # Differential expression: NPC state
 #===============================================================================
@@ -442,71 +525,101 @@ DE_NPC <- FindMarkers(
 write.csv(
   DE_NPC,
   "data/DE_NPC_Recurrence_vs_Initial.csv",
-  row.names = FALSE
+  row.names = TRUE
 )
-# 23. Extract significant DEGs
+#===============================================================================
+# 23. Extract significant differentially expressed genes
+#
+# Differential-expression comparison:
+#
+#   Recurrence vs Initial
+#
+# Therefore:
+#   avg_log2FC >  0.25 = higher expression in Recurrence
+#   avg_log2FC < -0.25 = higher expression in Initial
+#
+# The terms "higher in Recurrence" and "higher in Initial" are used instead
+# of "upregulated" and "downregulated" to make the direction of the comparison
+# explicit.
 #===============================================================================
 
-AC_up <- rownames(
+#AC
+AC_higher_Recurrence <- rownames(
   subset(
     DE_AC,
     p_val_adj < 0.05 & avg_log2FC > 0.25
   )
 )
 
-AC_down <- rownames(
+AC_higher_Initial <- rownames(
   subset(
     DE_AC,
     p_val_adj < 0.05 & avg_log2FC < -0.25
   )
 )
 
-length(AC_up)
-length(AC_down)
+# Number of significant genes
+length(AC_higher_Recurrence)
+length(AC_higher_Initial)
 
-MES_up <- rownames(
+# MES
+MES_higher_Recurrence <- rownames(
   subset(
     DE_MES,
     p_val_adj < 0.05 & avg_log2FC > 0.25
   )
 )
 
-MES_down <- rownames(
+MES_higher_Initial <- rownames(
   subset(
     DE_MES,
     p_val_adj < 0.05 & avg_log2FC < -0.25
   )
 )
 
-length(MES_up)
-length(MES_down)
+# Number of significant genes
+length(MES_higher_Recurrence)
+length(MES_higher_Initial)
 
-NPC_up <- rownames(
+# NPC
+NPC_higher_Recurrence <- rownames(
   subset(
     DE_NPC,
     p_val_adj < 0.05 & avg_log2FC > 0.25
   )
 )
 
-NPC_down <- rownames(
+NPC_higher_Initial <- rownames(
   subset(
     DE_NPC,
     p_val_adj < 0.05 & avg_log2FC < -0.25
   )
 )
 
-length(NPC_up)
-length(NPC_down)
+# Number of significant genes
+length(NPC_higher_Recurrence)
+length(NPC_higher_Initial)
 
 #===============================================================================
-# GO Biological Process Enrichment
+# 24. GO Biological Process enrichment
+#
+# GO enrichment was performed separately for genes with significantly higher
+# expression in recurrent and initial tumors within each Neftel state.
 #===============================================================================
+#================================================================================
 
 library(clusterProfiler)
 library(org.Hs.eg.db)
 
-GO_AC_up <- enrichGO(
-  gene = AC_up,
+#===============================================================================
+# AC state
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# AC: genes with higher expression in Recurrence
+#-------------------------------------------------------------------------------
+GO_AC_Recurrence <- enrichGO(
+  gene = AC_higher_Recurrence,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -516,23 +629,26 @@ GO_AC_up <- enrichGO(
   readable = TRUE
 )
 
-head(as.data.frame(GO_AC_up))
+#To check the data
+head(as.data.frame(GO_AC_Recurrence))
 
-head(as.data.frame(GO_AC_up), 15)[,
-                                  c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_AC_Recurrence), 15)[,
+                                          c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ]
 
 # Save AC recurrence-up GO results
 
 write.csv(
-  as.data.frame(GO_AC_up),
-  "data/GO_AC_up_Recurrence.csv",
-  row.names = FALSE
+  as.data.frame(GO_AC_Recurrence),
+  "data/GO_AC_Recurrence.csv"
 )
 
-# AC: Initial-up genes
-GO_AC_down <- enrichGO(
-  gene = AC_down,
+#-------------------------------------------------------------------------------
+# AC: genes with higher expression in Initial tumors
+#-------------------------------------------------------------------------------
+
+GO_AC_Initial <- enrichGO(
+  gene = AC_higher_Initial,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -542,15 +658,23 @@ GO_AC_down <- enrichGO(
   readable = TRUE
 )
 
+#To check the data
+head(as.data.frame(GO_AC_Initial))
+
 write.csv(
-  as.data.frame(GO_AC_down),
-  "data/GO_AC_down_Initial.csv",
-  row.names = FALSE
+  as.data.frame(GO_AC_Initial),
+  "data/GO_AC_Initial.csv"
 )
 
-# MES: Recurrence-up genes
-GO_MES_up <- enrichGO(
-  gene = MES_up,
+
+#===============================================================================
+# MES state
+#===============================================================================
+
+# MES: genes with higher expression in Recurrence
+
+GO_MES_Recurrence <- enrichGO(
+  gene = MES_higher_Recurrence,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -560,15 +684,19 @@ GO_MES_up <- enrichGO(
   readable = TRUE
 )
 
+
+#to check the data
+head(as.data.frame(GO_MES_Recurrence))
+
 write.csv(
-  as.data.frame(GO_MES_up),
-  "data/GO_MES_up_Recurrence.csv",
-  row.names = FALSE
+  as.data.frame(GO_MES_Recurrence),
+  "data/GO_MES_Recurrence.csv"
 )
 
-# MES: Initial-up genes
-GO_MES_down <- enrichGO(
-  gene = MES_down,
+# MES: genes with higher expression in Initial tumors
+
+GO_MES_Initial <- enrichGO(
+  gene = MES_higher_Initial,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -578,15 +706,23 @@ GO_MES_down <- enrichGO(
   readable = TRUE
 )
 
+#to check the data
+head(as.data.frame(GO_MES_Initial))
+
 write.csv(
-  as.data.frame(GO_MES_down),
-  "data/GO_MES_down_Initial.csv",
-  row.names = FALSE
+  as.data.frame(GO_MES_Initial),
+  "data/GO_MES_down_Initial.csv"
 )
 
-# NPC: Recurrence-up genes
-GO_NPC_up <- enrichGO(
-  gene = NPC_up,
+
+#===============================================================================
+# NPC state
+#===============================================================================
+
+# NPC: genes with higher expression in Recurrence
+
+GO_NPC_Recurrence  <- enrichGO(
+  gene = NPC_higher_Recurrence,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -596,15 +732,18 @@ GO_NPC_up <- enrichGO(
   readable = TRUE
 )
 
+#to check the data
+head(as.data.frame(GO_NPC_Recurrence))
+
 write.csv(
-  as.data.frame(GO_NPC_up),
+  as.data.frame(GO_NPC_Recurrence),
   "data/GO_NPC_up_Recurrence.csv",
   row.names = FALSE
 )
 
-# NPC: Initial-up genes
-GO_NPC_down <- enrichGO(
-  gene = NPC_down,
+# NPC: genes with higher expression in Initial tumors
+GO_NPC_Initial <- enrichGO(
+  gene = NPC_higher_Initial,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -614,9 +753,12 @@ GO_NPC_down <- enrichGO(
   readable = TRUE
 )
 
+#to check the data
+head(as.data.frame(GO_NPC_Initial))
+
 write.csv(
-  as.data.frame(GO_NPC_down),
-  "data/GO_NPC_down_Initial.csv",
+  as.data.frame(GO_NPC_Initial),
+  "data/GO_NPC_Initial.csv",
   row.names = FALSE
 )
 
@@ -624,28 +766,28 @@ write.csv(
 # Review top GO Biological Processes
 #===============================================================================
 
-head(as.data.frame(GO_AC_up)[,
-                             c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_AC_Initial)[,
+                                  c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ], 10)
 
-head(as.data.frame(GO_AC_down)[,
-                               c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_AC_Recurrence)[,
+                                     c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ], 10)
 
-head(as.data.frame(GO_MES_up)[,
-                              c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_MES_Initial)[,
+                                   c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ], 10)
 
-head(as.data.frame(GO_MES_down)[,
-                                c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_MES_Recurrence)[,
+                                      c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ], 10)
 
-head(as.data.frame(GO_NPC_up)[,
-                              c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_NPC_Initial)[,
+                                   c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ], 10)
 
-head(as.data.frame(GO_NPC_down)[,
-                                c("ID", "Description", "GeneRatio", "Count", "p.adjust")
+head(as.data.frame(GO_NPC_Recurrence)[,
+                                      c("ID", "Description", "GeneRatio", "Count", "p.adjust")
 ], 10)
 
 #===============================================================================
@@ -653,123 +795,132 @@ head(as.data.frame(GO_NPC_down)[,
 #===============================================================================
 
 dotplot(
-  GO_AC_up,
+  GO_AC_Initial,
   showCategory = 15
 ) +
-  ggtitle("AC State - Recurrence-up GO Biological Processes")
+  ggtitle("AC State - GO BP Enrichment: Higher in Initial")
 
 dotplot(
-  GO_AC_down,
+  GO_AC_Recurrence,
   showCategory = 15
 ) +
-  ggtitle("AC State - Initial-up GO Biological Processes")
+  ggtitle("AC State - GO BP Enrichment: Higher in Recurrence")
 
 dotplot(
-  GO_MES_up,
+  GO_MES_Initial,
   showCategory = 15
 ) +
-  ggtitle("MES State - Recurrence-up GO Biological Processes")
+  ggtitle("MES State - GO BP Enrichment: Higher in Initial")
 
 dotplot(
-  GO_MES_down,
+  GO_MES_Recurrence,
   showCategory = 15
 ) +
-  ggtitle("MES State - Initial-up GO Biological Processes")
+  ggtitle("MES State - GO BP Enrichment: Higher in Recurrence")
 
 dotplot(
-  GO_NPC_up,
+  GO_NPC_Initial,
   showCategory = 15
 ) +
-  ggtitle("NPC State - Recurrence-up GO Biological Processes")
+  ggtitle("NPC State - GO BP Enrichment: Higher in Initial")
 
 dotplot(
-  GO_NPC_down,
+  GO_NPC_Recurrence,
   showCategory = 15
 ) +
-  ggtitle("NPC State - Initial-up GO Biological Processes")
+  ggtitle("NPC State - GO BP Enrichment: Higher in Recurrence")
 
 #===============================================================================
 # GO summary tables
 #===============================================================================
 
-GO_AC_up_df <- as.data.frame(GO_AC_up)
-GO_AC_down_df <- as.data.frame(GO_AC_down)
-GO_MES_up_df <- as.data.frame(GO_MES_up)
-GO_MES_down_df <- as.data.frame(GO_MES_down)
-GO_NPC_up_df <- as.data.frame(GO_NPC_up)
-GO_NPC_down_df <- as.data.frame(GO_NPC_down)
+GO_AC_Initial_df <- as.data.frame(GO_AC_Initial)
+GO_AC_Recurrence_df <- as.data.frame(GO_AC_Recurrence)
+
+GO_MES_Initial_df <- as.data.frame(GO_MES_Initial)
+GO_MES_Recurrence_df <- as.data.frame(GO_MES_Recurrence)
+
+GO_NPC_Initial_df <- as.data.frame(GO_NPC_Initial)
+GO_NPC_Recurrence_df <- as.data.frame(GO_NPC_Recurrence)
+
+# Save complete GO enrichment tables
 
 write.csv(
-  GO_AC_up_df,
-  "data/GO_AC_up_Recurrence.csv",
+  GO_AC_Initial_df,
+  "data/GO_AC_Initial.csv",
   row.names = FALSE
 )
 
 write.csv(
-  GO_AC_down_df,
-  "data/GO_AC_down_Initial.csv",
+  GO_AC_Recurrence_df,
+  "data/GO_AC_Recurrence.csv",
   row.names = FALSE
 )
 
 write.csv(
-  GO_MES_up_df,
-  "data/GO_MES_up_Recurrence.csv",
+  GO_MES_Initial_df,
+  "data/GO_MES_Initial.csv",
   row.names = FALSE
 )
 
 write.csv(
-  GO_MES_down_df,
-  "data/GO_MES_down_Initial.csv",
+  GO_MES_Recurrence_df,
+  "data/GO_MES_Recurrence.csv",
   row.names = FALSE
 )
 
 write.csv(
-  GO_NPC_up_df,
-  "data/GO_NPC_up_Recurrence.csv",
+  GO_NPC_Initial_df,
+  "data/GO_NPC_Initial.csv",
   row.names = FALSE
 )
 
 write.csv(
-  GO_NPC_down_df,
-  "data/GO_NPC_down_Initial.csv",
+  GO_NPC_Recurrence_df,
+  "data/GO_NPC_Recurrence.csv",
   row.names = FALSE
 )
 
 #===============================================================================
 # Top 10 GO Biological Processes for each comparison
+#
+# The 10 most significantly enriched GO Biological Processes were selected
+# separately for genes with higher expression in Initial and Recurrence within
+# each Neftel state.
 #===============================================================================
-
 GO_summary <- bind_rows(
-  GO_AC_up_df %>%
+  GO_AC_Initial_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "AC", Comparison = "Recurrence-up"),
+    mutate(State = "AC", Comparison = "Higher in Initial"),
   
-  GO_AC_down_df %>%
+  GO_AC_Recurrence_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "AC", Comparison = "Initial-up"),
+    mutate(State = "AC", Comparison = "Higher in Recurrence"),
   
-  GO_MES_up_df %>%
+  GO_MES_Initial_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "MES", Comparison = "Recurrence-up"),
+    mutate(State = "MES", Comparison = "Higher in Initial"),
   
-  GO_MES_down_df %>%
+  GO_MES_Recurrence_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "MES", Comparison = "Initial-up"),
+    mutate(State = "MES", Comparison = "Higher in Recurrence"),
   
-  GO_NPC_up_df %>%
+  GO_NPC_Initial_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "NPC", Comparison = "Recurrence-up"),
+    mutate(State = "NPC", Comparison = "Higher in Initial"),
   
-  GO_NPC_down_df %>%
+  GO_NPC_Recurrence_df %>%
     filter(p.adjust < 0.05) %>%
     slice_min(p.adjust, n = 10) %>%
-    mutate(State = "NPC", Comparison = "Initial-up")
+    mutate(State = "NPC", Comparison = "Higher in Recurrence")
 )
+
+
 
 write.csv(
   GO_summary,
@@ -787,9 +938,6 @@ GO_summary[, c(
 )]
 
 #===============================================================================
-# Combined GO enrichment figure
-#===============================================================================
-
 GO_plot_data <- GO_summary
 
 GO_plot_data$log10_padj <- -log10(GO_plot_data$p.adjust)
@@ -797,12 +945,12 @@ GO_plot_data$log10_padj <- -log10(GO_plot_data$p.adjust)
 GO_plot_data$Comparison <- factor(
   paste(GO_plot_data$State, GO_plot_data$Comparison, sep = " - "),
   levels = c(
-    "AC - Recurrence-up",
-    "AC - Initial-up",
-    "MES - Recurrence-up",
-    "MES - Initial-up",
-    "NPC - Recurrence-up",
-    "NPC - Initial-up"
+    "AC - Higher in Recurrence",
+    "AC - Higher in Initial",
+    "MES - Higher in Recurrence",
+    "MES - Higher in Initial",
+    "NPC - Higher in Recurrence",
+    "NPC - Higher in Initial"
   )
 )
 
@@ -835,9 +983,8 @@ p_GO_summary <- ggplot(
   )
 
 p_GO_summary
-
 #===============================================================================
-# Save combined GO figure
+# Save combined GO enrichment figure
 #===============================================================================
 
 ggsave(
@@ -855,8 +1002,9 @@ ggsave(
   dpi = 300
 )
 
+
 #===============================================================================
-# Save final neoplastic Seurat object
+# Save final annotated neoplastic Seurat object
 #===============================================================================
 
 saveRDS(
