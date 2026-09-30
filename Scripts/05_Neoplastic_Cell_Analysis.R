@@ -452,7 +452,7 @@ saveRDS(
 
 ac <- subset(
   gbm_neoplastic,
-  subset = manual_Neftel_state == "AC"
+  subset = manual_Neftel_state == "AC-like"
 )
 
 table(ac$TimePoint)
@@ -482,12 +482,14 @@ write.csv(
 
 mes <- subset(
   gbm_neoplastic,
-  subset = manual_Neftel_state == "MES"
+  subset = manual_Neftel_state == "MES-like"
 )
 
 table(mes$TimePoint)
 
 Idents(mes) <- "TimePoint"
+
+levels(Idents(mes))
 
 DE_MES <- FindMarkers(
   mes,
@@ -502,17 +504,19 @@ write.csv(
   "data/DE_MES_Recurrence_vs_Initial.csv",
   row.names = TRUE
 )
+
 # Differential expression: NPC state
 #===============================================================================
 
 npc <- subset(
   gbm_neoplastic,
-  subset = manual_Neftel_state == "NPC"
+  subset = manual_Neftel_state == "NPC-like"
 )
 
 table(npc$TimePoint)
 
 Idents(npc) <- "TimePoint"
+levels(Idents(npc))
 
 DE_NPC <- FindMarkers(
   npc,
@@ -604,7 +608,18 @@ length(NPC_higher_Initial)
 # 24. GO Biological Process enrichment
 #
 # GO enrichment was performed separately for genes with significantly higher
-# expression in recurrent and initial tumors within each Neftel state.
+# expression in recurrent and initial tumors within the AC-like, MES-like and
+# NPC-like states.
+#
+# OPC-like cells were detected only in Initial tumors and were absent from the
+# Recurrent tumors in the manual Neftel-state annotation. Therefore, an
+# Initial-versus-Recurrence differential-expression comparison could not be
+# performed within the OPC-like state, and OPC-like cells were not included
+# in the downstream GO enrichment analysis.
+#
+# The absence of OPC-like cells in the Recurrent group is retained as a
+# cell-state composition observation and should be interpreted separately
+# from the within-state differential-expression analysis.
 #===============================================================================
 #================================================================================
 
@@ -632,9 +647,6 @@ GO_AC_Recurrence <- enrichGO(
 #To check the data
 head(as.data.frame(GO_AC_Recurrence))
 
-head(as.data.frame(GO_AC_Recurrence), 15)[,
-                                          c("ID", "Description", "GeneRatio", "Count", "p.adjust")
-]
 
 # Save AC recurrence-up GO results
 
@@ -798,37 +810,38 @@ dotplot(
   GO_AC_Initial,
   showCategory = 15
 ) +
-  ggtitle("AC State - GO BP Enrichment: Higher in Initial")
+  ggtitle("AC-like State - GO BP Enrichment: Higher in Initial")
 
 dotplot(
   GO_AC_Recurrence,
   showCategory = 15
 ) +
-  ggtitle("AC State - GO BP Enrichment: Higher in Recurrence")
+  ggtitle("AC-like State - GO BP Enrichment: Higher in Recurrence")
 
 dotplot(
   GO_MES_Initial,
   showCategory = 15
 ) +
-  ggtitle("MES State - GO BP Enrichment: Higher in Initial")
+  ggtitle("MES-like State - GO BP Enrichment: Higher in Initial")
 
 dotplot(
   GO_MES_Recurrence,
   showCategory = 15
 ) +
-  ggtitle("MES State - GO BP Enrichment: Higher in Recurrence")
+  ggtitle("MES-like State - GO BP Enrichment: Higher in Recurrence")
 
 dotplot(
   GO_NPC_Initial,
   showCategory = 15
 ) +
-  ggtitle("NPC State - GO BP Enrichment: Higher in Initial")
+  ggtitle("NPC-like State - GO BP Enrichment: Higher in Initial")
 
 dotplot(
   GO_NPC_Recurrence,
   showCategory = 15
 ) +
-  ggtitle("NPC State - GO BP Enrichment: Higher in Recurrence")
+  ggtitle("NPC-like State - GO BP Enrichment: Higher in Recurrence")
+
 
 #===============================================================================
 # GO summary tables
