@@ -329,34 +329,34 @@ write.csv(
 gbm_neoplastic$manual_Neftel_state <- "Unassigned"
 
 
-# AC
+# AC-like
 gbm_neoplastic$manual_Neftel_state[
   gbm_neoplastic$neoplastic_clusters %in% c(
     "0", "4", "6", "12", "13"
   )
-] <- "AC"
+] <- "AC-like"
 
 
-# MES
+# MES-like
 gbm_neoplastic$manual_Neftel_state[
   gbm_neoplastic$neoplastic_clusters %in% c(
     "1", "9", "11"
   )
-] <- "MES"
+] <- "MES-like"
 
 
-# NPC
+# NPC-like
 gbm_neoplastic$manual_Neftel_state[
   gbm_neoplastic$neoplastic_clusters %in% c(
     "2", "3"
   )
-] <- "NPC"
+] <- "NPC-like"
 
 
 # OPC
 gbm_neoplastic$manual_Neftel_state[
   gbm_neoplastic$neoplastic_clusters == "5"
-] <- "OPC"
+] <- "OPC-like"
 
 
 #===============================================================================
