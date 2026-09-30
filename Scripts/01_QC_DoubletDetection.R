@@ -11,7 +11,6 @@
 #   4. Inspect and remove doublets
 # ============================================================
 
-
 # ============================================================
 # 1. INSTALL PACKAGES IF NEEDED
 # ============================================================
@@ -81,7 +80,7 @@ gbm[["percent.mt"]] <- PercentageFeatureSet(
 # These measurements are examined together to identify
 # low-quality or unusual cells.
 
-VlnPlot(
+p_qc_violin <- VlnPlot(
   gbm,
   features = c(
     "nFeature_RNA",
@@ -89,6 +88,20 @@ VlnPlot(
     "percent.mt"
   ),
   ncol = 3
+)
+
+p_qc_violin
+
+
+# Save the QC violin plot as a high-quality PNG.
+
+ggsave(
+  filename = "figures/QC_metrics_violin.png",
+  plot = p_qc_violin,
+  width = 12,
+  height = 5,
+  units = "in",
+  dpi = 300
 )
 
 
@@ -102,12 +115,24 @@ VlnPlot(
 # This allows us to see the relationship between the total
 # amount of RNA in a cell and the number of genes detected.
 
-FeatureScatter(
+p_qc_counts_features <- FeatureScatter(
   gbm,
   feature1 = "nCount_RNA",
   feature2 = "nFeature_RNA"
 )
 
+p_qc_counts_features
+
+# Save figure.
+
+ggsave(
+  filename = "figures/QC_nCount_vs_nFeature.png",
+  plot = p_qc_counts_features,
+  width = 7,
+  height = 6,
+  units = "in",
+  dpi = 300,
+  )
 
 # ------------------------------------------------------------
 # Total RNA counts vs mitochondrial RNA
@@ -295,7 +320,7 @@ table(
 #
 # facet_wrap() shows the result separately for each sample.
 
-ggplot(
+p_doublet_scatter <- ggplot(
   gbm@meta.data,
   aes(
     x = nCount_RNA,
@@ -314,6 +339,20 @@ ggplot(
   ) +
   theme_classic()
 
+p_doublet_scatter
+
+
+# Save figure.
+
+ggsave(
+  filename = "figures/Doublet_detection_by_sample.png",
+  plot = p_doublet_scatter,
+  width = 12,
+  height = 8,
+  units = "in",
+  dpi = 300,
+  )
+
 
 # ------------------------------------------------------------
 # Compare doublet scores
@@ -323,13 +362,26 @@ ggplot(
 # cells classified as singlets and cells classified as
 # doublets.
 
-VlnPlot(
+p_doublet_violin <- VlnPlot(
   gbm,
   features = "doublet_score",
   group.by = "doublet_class",
   split.by = "orig.ident"
 )
 
+p_doublet_violin
+
+
+# Save figure.
+
+ggsave(
+  filename = "figures/Doublet_score_violin.png",
+  plot = p_doublet_violin,
+  width = 10,
+  height = 6,
+  units = "in",
+  dpi = 300,
+  )
 
 # ============================================================
 # 13. REMOVE DOUBLETS
@@ -369,11 +421,25 @@ gbm$doublet_class <- droplevels(
 # Compare the remaining doublet-score distributions across
 # samples.
 
-VlnPlot(
+p_singlet_scores <- VlnPlot(
   gbm,
   features = "doublet_score",
   group.by = "orig.ident"
 )
+
+p_singlet_scores
+
+
+# Save figure.
+
+ggsave(
+  filename = "figures/Singlet_doublet_scores_by_sample.png",
+  plot = p_singlet_scores,
+  width = 9,
+  height = 6,
+  units = "in",
+  dpi = 300,
+  )
 
 
 # ============================================================
